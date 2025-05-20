@@ -1,2 +1,2 @@
 # CCTM-Fusion
-Cross-Architecture CNN-Transformer-MLP Fusion Networks
+Cross-Architecture CNN-Transformer-MixerMLP Fusion Networks
