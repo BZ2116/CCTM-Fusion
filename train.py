@@ -10,21 +10,10 @@ from tqdm import tqdm
 import time
 import numpy as np
 
+
 def train_model(model, train_loader, test_loader, optimizer, criterion, num_epochs=5, model_name="model"):
     """
     训练模型，记录多种性能指标。
-
-    参数:
-        model: 待训练模型
-        train_loader, test_loader: 数据加载器
-        optimizer: 优化器
-        criterion: 损失函数
-        num_epochs: 训练轮数
-        model_name: 模型名称
-
-    返回:
-        history: 包含多种指标的历史记录
-        final_metrics: 最终测试指标（准确率、F1 分数等）
     """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -32,7 +21,7 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, num_epoc
         'train_loss': [], 'train_acc': [], 'val_loss': [], 'val_acc': [],
         'val_f1': [], 'train_time': [], 'inference_time': []
     }
-    confusion_matrices = []  # 每个 epoch 的混淆矩阵
+    confusion_matrices = []
 
     for epoch in range(num_epochs):
         model.train()
@@ -51,13 +40,11 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, num_epoc
             optimizer.step()
             running_loss += loss.item()
 
-            # 计算训练准确率
             _, preds = torch.max(outputs, 1)
             train_correct += (preds == labels).sum().item()
             train_total += labels.size(0)
             train_bar.set_postfix(loss=loss.item())
 
-        # 训练指标
         epoch_time = time.time() - start_time
         avg_train_loss = running_loss / len(train_loader)
         train_acc = train_correct / train_total
@@ -65,7 +52,6 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, num_epoc
         history['train_acc'].append(train_acc)
         history['train_time'].append(epoch_time)
 
-        # 评估
         model.eval()
         val_loss = 0.0
         all_preds = []
@@ -84,7 +70,7 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, num_epoc
 
         inference_time = (time.time() - inference_start) / len(test_loader)
         avg_val_loss = val_loss / len(test_loader)
-        val_acc = accuracy_score(all_labels, all_labels)
+        val_acc = accuracy_score(all_labels, all_preds)  # Fixed
         val_f1 = f1_score(all_labels, all_preds, average='macro')
         cm = confusion_matrix(all_labels, all_preds)
 
@@ -101,12 +87,11 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, num_epoc
               f'Inference Time: {inference_time:.4f}s')
 
     final_metrics = {
-        'val_acc': val_acc, # Make sure this was calculated with all_preds
+        'val_acc': val_acc,
         'val_f1': val_f1,
         'val_loss': avg_val_loss,
         'avg_train_time': np.mean(history['train_time']),
         'avg_inference_time': np.mean(history['inference_time']),
         'confusion_matrix': cm
     }
-    # Return the model as well
     return model, history, final_metrics
